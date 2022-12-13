@@ -1,0 +1,8 @@
+cesta tam aj spat su nahodne
+ale cesta tam aj spat su vzdy rovnake
+
+limitujuce podmienky
+zberacov moze byt n
+
+sad moze generovat ovocie len ked je tam sam
+bud jeden zberac alebo jeden sad

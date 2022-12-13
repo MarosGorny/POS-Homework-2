@@ -1,0 +1,1 @@
+/usr/bin/cc -g CMakeFiles/DomacaUloha_SAD.dir/main.c.o -o DomacaUloha_SAD  -lpthread 
