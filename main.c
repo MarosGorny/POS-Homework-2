@@ -47,7 +47,7 @@ void* zberacF(void* arg) {
 
     while(zberac->pocetZlehoOvocia + zberac->pocetDobrehoOvocia < zberac->dostatokOvociaNaSkoncenie) {
         zberac->casPresunu =  1+ (rand()%4);
-        printf("Zberac[%d] sa presuva %d sekundy ku pozemku\n",zberac->id,zberac->casPresunu);
+        printf("Zberac[%d] sa presuva %d sek. ku pozemku\n",zberac->id,zberac->casPresunu);
         sleep(zberac->casPresunu);
         pthread_mutex_lock(zberac->data->mut);
 
@@ -57,7 +57,7 @@ void* zberacF(void* arg) {
             printf("V sade pribudlo ovocie, zberac[%d] ide nazbierat ovocie\n",zberac->id);
         }
 
-        while (zberac->aktualnyPocetOvocia < 4) {
+        while (zberac->aktualnyPocetOvocia < zberac->kapacitaKosika) {
             if (zberac->pocetZlehoOvocia + zberac->pocetDobrehoOvocia >= zberac->dostatokOvociaNaSkoncenie) {
                 printf("Zberac[%d] uz naplnil svoje kvoty, prestava zbierat\n",zberac->id);
                 break;
@@ -67,7 +67,7 @@ void* zberacF(void* arg) {
                 break;
             }
             OVOCIE ovocie = zberac->data->pozemok[zberac->data->aktualnyPocetOvocia-1];
-            char ovocieString[12];
+            char ovocieString[8];
             if(ovocie == JABLKO) {
                 strcpy(ovocieString,"Jablko");
             } else if (ovocie == HRUSKA) {
@@ -110,7 +110,7 @@ void* zberacF(void* arg) {
 
         pthread_cond_signal(zberac->data->pridaj);
         pthread_mutex_unlock(zberac->data->mut);
-        printf("Zberac[%d] sa presuva %d sekundy ku autu\n",zberac->id,zberac->casPresunu);
+        printf("Zberac[%d] sa presuva %d sek. ku autu\n",zberac->id,zberac->casPresunu);
         printf("\tSpolu ovocie:%d\n\tDobre ovocie:%d\n\tPokazene ovocie:%d\n",zberac->pocetDobrehoOvocia+zberac->pocetZlehoOvocia,zberac->pocetDobrehoOvocia,zberac->pocetZlehoOvocia);
         zberac->aktualnyPocetOvocia = 0;
         sleep(zberac->casPresunu);
@@ -231,7 +231,6 @@ int main(int argc, char* argv[]) {
         int zleOvocie = 16-dobreOvocie[i];
         printf("\tPokazene ovocie: %d [%.2f %%]\n",zleOvocie,(zleOvocie/16.0)*100);
     }
-
 
     return 0;
 }
