@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 #include <pthread.h>
 
 
@@ -38,16 +39,76 @@ typedef struct sad{
 }SAD;
 
 void* zberacF(void* arg) {
+    ZBERAC* zberac = arg;
 
+    printf("Zberac[%d] je pripraveny zberat ovocie\n",zberac->id);
+
+    while(zberac->pocetZlehoOvocia + zberac->pocetDobrehoOvocia < zberac->dostatokOvociaNaSkoncenie) {
+        zberac->casPresunu = 1+ (rand()%4);
+        printf("Zberac[%d] sa presuva %d sekundy ku pozemku\n",zberac->id,zberac->casPresunu);
+        sleep(zberac->casPresunu);
+        pthread_mutex_lock(zberac->data->mut);
+
+        while (zberac->data->aktualnyPocetOvocia <= 0) {
+            printf("Zberac[%d] nenasiel ziadne ovocie, ide cakat vonku. Pocet ovocia v sade: %d\n",zberac->id,zberac->data->aktualnyPocetOvocia);
+            pthread_cond_wait(zberac->data->odober,zberac->data->mut);
+            printf("V sade pribudlo ovocie, zberac[%d] ide nazbierat ovocie\n",zberac->id);
+        }
+
+        while (zberac->aktualnyPocetOvocia < 4) {
+            if (zberac->pocetZlehoOvocia + zberac->pocetDobrehoOvocia >= zberac->dostatokOvociaNaSkoncenie) {
+                printf("Zberac[%d] uz naplnil svoje kvoty, prestava zbierat\n",zberac->id);
+                break;
+            }
+            if(zberac->data->aktualnyPocetOvocia == 0) {
+                printf("Zberac[%d] si vsimol, ze sad je prazdny, ide ku autu.Pocet ovocia v kosiku: %d\n",zberac->id,zberac->aktualnyPocetOvocia);
+                break;
+            }
+            OVOCIE ovocie = zberac->data->pozemok[zberac->data->aktualnyPocetOvocia-1];
+            zberac->data->aktualnyPocetOvocia--;
+            zberac->aktualnyPocetOvocia++;
+            printf("Zberac[%d] nazbieral jedno ovocie, pocet v kosiku: %d\n",zberac->id,zberac->aktualnyPocetOvocia);
+
+            int nahoda = rand()%100;
+            if(ovocie == JABLKO) {
+                if(nahoda<30) {
+                    zberac->pocetZlehoOvocia++;
+                } else {
+                    zberac->pocetDobrehoOvocia++;
+                }
+            } else if (ovocie == HRUSKA) {
+                if(nahoda<60) {
+                    zberac->pocetZlehoOvocia++;
+                } else {
+                    zberac->pocetDobrehoOvocia++;
+                }
+            } else if (ovocie == SLIVKA) {
+                if(nahoda<10) {
+                    zberac->pocetZlehoOvocia++;
+                } else {
+                    zberac->pocetDobrehoOvocia++;
+                }
+            }
+        }
+
+        pthread_cond_signal(zberac->data->pridaj);
+        pthread_mutex_unlock(zberac->data->mut);
+        printf("Zberac[%d] sa presuva %d sekundy ku autu\n",zberac->id,zberac->casPresunu);
+        printf("\tSpolu ovocie:%d\n\tDobre ovocie:%d\n\tPokazene ovocie:%d\n",zberac->pocetDobrehoOvocia+zberac->pocetZlehoOvocia,zberac->pocetDobrehoOvocia,zberac->pocetZlehoOvocia);
+        zberac->aktualnyPocetOvocia = 0;
+        sleep(zberac->casPresunu);
+
+    }
+
+    printf("Zberac[%d] odchadza domov\n",zberac->id);
 }
 
 void* sadF(void* arg) {
     SAD* sad = arg;
-    printf("V SADE zacina rast ovocie!!\n");
+    printf("V SADE zacina rast ovocia!!\n");
     OVOCIE ovocie;
 
     while (sad->pocetVytvorenehoOvocia < sad->dostatokOvociaNaSkoncenie) {
-        printf("Pocet doposial narasteneho ovocia: %d\n",sad->pocetVytvorenehoOvocia);
         int nahoda = rand()%100;
 
         pthread_mutex_lock(sad->data->mut);
@@ -77,6 +138,10 @@ void* sadF(void* arg) {
         }
         pthread_cond_signal(sad->data->odober);
         pthread_mutex_unlock(sad->data->mut);
+        printf("\tPocet doposial narasteneho ovocia: %d\n",sad->pocetVytvorenehoOvocia);
+        printf("\tSad si dava odpocinok... ZzZ...\n");
+        sleep(1);
+
     }
 
     printf("V SADE uz nenarastie ziadne ovocie, blizi sa zima...\n");
